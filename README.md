@@ -7,16 +7,6 @@
 Примеры процесса: [sdd-workflow-demo](https://github.com/KrtNinja/sdd-workflow-demo) (один сервис),
 [sdd-workflow-demo2](https://github.com/KrtNinja/sdd-workflow-demo2) (несколько сервисов).
 
-## Ветки
-
-`main` — общая база: процесс, скиллы, правила и lint без привязки к конкретному агенту.
-Остальные ветки — адаптеры: `main` плюс то, что нужно одному инструменту (манифест, пути,
-установка). Изменения процесса делаются в `main`, адаптеры обновляются от неё.
-
-| Ветка | Для чего |
-|---|---|
-| [`gigacode`](https://github.com/KrtNinja/sdd-workflow/tree/gigacode) | GigaCode CLI: расширение с манифестом, правила подключаются как контекст |
-
 ## Поток
 
 | Этап | Команда | Результат | Ворота (решает человек) |
@@ -28,42 +18,63 @@
 | Ревью | `/sdd-review <feature> spec\|slices\|adr` | таблица находок | — |
 | Позднее решение | `/sdd-decide <feature> "<вопрос>" "<решение>"` | протокол → FR → AC | — |
 
-`node scripts/sdd-lint.mjs docs/<feature>` в любой момент показывает ошибки и следующий шаг.
+`/sdd-lint <feature>` в любой момент показывает ошибки и следующий шаг.
+
+В GigaCode CLI скилл вызывается `/skills sdd-grill <feature>`; если сборка показывает скиллы как команды — `/sdd-grill <feature>`.
 
 ## Что внутри
 
 ```
-rules/AGENTS.planning.md   — раздел для AGENTS.md проекта: этапы, ворота, правила артефактов
-scripts/sdd-lint.mjs       — механические проверки: ID, блоки кода, покрытие FR↔slices,
-                             зависимости и циклы, стоп-слова в Dev Spec, открытые вопросы, этап
+gigacode-extension.json    — манифест расширения GigaCode CLI (qwen-extension.json — то же для Qwen Code)
+rules/AGENTS.planning.md   — правила этапов и артефактов; расширение подключает их как контекст
+scripts/update-vendor.sh   — обновить встроенные grilling и humanizer из их репозиториев
 skills/
+  sdd-lint/     — механические проверки: ID, блоки кода, покрытие FR↔slices, зависимости,
+                  стоп-слова в Dev Spec, открытые вопросы, текущий этап (scripts/sdd-lint.mjs)
   sdd-grill/    — brainstorming поверх grilling; стартовые темы, шаблон протокола
   sdd-spec/     — Dev Spec из протокола с таблицей трассировки
   sdd-slices/   — нарезка с правилами против перенарезки и калибровкой на demo2 (9 → 5)
   sdd-adr/      — фильтр «нужен ли ADR», варианты через требования, шаблон
   sdd-review/   — чеклисты spec / slices / adr, только находки
   sdd-decide/   — решение сверху вниз: протокол → FR → AC
-  */evals/      — тестовые кейсы: запрос, входные файлы, проверки
+  grilling/     — копия из mattpocock/skills (MIT), нужна sdd-grill и sdd-adr
+  humanizer/    — копия из blader/humanizer (MIT), запускается вручную перед checkpoint
+  */evals/      — тестовые кейсы в формате skill-creator (`claude plugin eval`)
 ```
 
-## Установка в репозиторий с доками
+## Установка в GigaCode CLI
 
-1. Скиллы grilling (нужны для `/sdd-grill` и выбора в `/sdd-adr`):
+Репозиторий — расширение GigaCode: скиллы, правила и lint ставятся одной командой, ничего не копируется.
+
+1. Подключить склонированный репозиторий:
    ```bash
-   npx skills@latest add mattpocock/skills      # выбрать grilling
+   gigacode extensions link ~/tools/sdd-workflow
    ```
-2. Humanizer — по желанию, убирает следы ИИ из прозы spec, slices и ADR перед checkpoint
-   (скиллы напоминают о нём в конце, запускаете вы):
+   `link` ставит ссылку на папку, поэтому после `git pull` новые версии скиллов видны сразу
+   (после перезапуска GigaCode). Если сборка не знает `link`:
    ```bash
-   npx skills@latest add blader/humanizer
+   gigacode extensions install ~/tools/sdd-workflow     # или https://github.com/KrtNinja/sdd-workflow
+   gigacode extensions update sdd-workflow              # после каждого git pull
    ```
-3. Этот пул:
+2. Перезапустить GigaCode и проверить: `gigacode extensions list`, внутри сессии — `/extensions`
+   и `/skills` (в списке sdd-grill … sdd-lint, grilling, humanizer).
+3. Правила из `rules/AGENTS.planning.md` расширение добавляет в контекст само. Чтобы они не
+   попадали в другие проекты, включите расширение только в репозитории с доками:
    ```bash
-   npx skills@latest add KrtNinja/sdd-workflow
+   gigacode extensions disable sdd-workflow
+   cd ~/work/docs-repo && gigacode extensions enable sdd-workflow --scope=workspace
    ```
-   или скопировать `skills/*` в папку скиллов вашего агента.
-4. Вставить `rules/AGENTS.planning.md` в файл правил агента (`AGENTS.md` или аналог) репозитория с доками.
-5. Скопировать `scripts/sdd-lint.mjs` в `scripts/` репозитория с доками (нужен Node 18+).
+   Если `--scope` ваша сборка не поддерживает, оставьте расширение включённым: правила
+   говорят только о файлах в `docs/` и в коде ничего не меняют.
+
+Нужен Node 18+ для `sdd-lint`.
+
+## Установка в другие агенты
+
+- Claude Code, Codex, opencode, Cursor: `npx skills@latest add KrtNinja/sdd-workflow`
+  (или скопировать `skills/*` в папку скиллов агента), затем вставить `rules/AGENTS.planning.md`
+  в `AGENTS.md` / `CLAUDE.md` репозитория с доками.
+- Qwen Code: `qwen extensions link <путь к репозиторию>` — тот же манифест (`qwen-extension.json`).
 
 Если grilling задаёт вопросы по одному удобнее, чем раундами, добавьте в AGENTS.md строку
 `When grilling, ask one question at a time.`
@@ -76,11 +87,13 @@ skills/
   в конце «Следующий шаг: …» и остановка. Быстрые модели склонны проскакивать ворота, а явная
   точка остановки и правило в AGENTS.md это держат.
 - **Скиллы вызывает человек** (`disable-model-invocation: true`): нет постоянной нагрузки на контекст
-  и нет случайных срабатываний. Агенты, которые не знают это поле,
-  просто покажут скилл в списке.
+  и нет случайных срабатываний. Поле поддерживает Claude Code; агенты, которые его не знают, просто
+  покажут скилл в списке.
 - **Механику проверяет скрипт, а не модель.** Покрытие, ID, циклы, стоп-слова — `sdd-lint`.
   Модели остаются смысловые проверки по чеклисту.
 - **Генерация и ревью разделены.** `/sdd-review` запускается в новой сессии и ничего не правит.
+- **Lint ищется от папки скилла.** Агент получает «Base directory» скилла и вызывает
+  `../sdd-lint/scripts/sdd-lint.mjs`, поэтому скрипт не нужно копировать в каждый проект.
 - **Humanizer — отдельно, перед checkpoint.** Его ~400 строк в контексте сбивали бы flash-модель
   на последнем шаге, поэтому скиллы только подсказывают `/humanizer <файл>`. Правило в AGENTS.md
   не даёт ему трогать FR/AC, ID, тексты сообщений, числа и варианты.
@@ -101,3 +114,4 @@ skills/
 
 - `grilling` и условия для ADR — [mattpocock/skills](https://github.com/mattpocock/skills) (MIT).
 - `humanizer` — [blader/humanizer](https://github.com/blader/humanizer) (MIT).
+- Структура скиллов и тесты — skill-creator от Anthropic.

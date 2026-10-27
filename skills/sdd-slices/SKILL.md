@@ -32,7 +32,7 @@ Slice — единица приёмки: его можно влить и про�
 5. Чего spec не решает — в «Открытые вопросы к Dev Spec» этого slice. Ответ не придумывай.
 6. Напиши `slices/README.md` по [assets/README.md](assets/README.md): таблица, покрытие, порядок,
    пересечения, проверка фичи.
-7. Запусти `node scripts/sdd-lint.mjs docs/<feature>`, исправь ошибки. Статус README — «на ревью».
+7. Запусти `node <папка этого скилла>/../sdd-lint/scripts/sdd-lint.mjs docs/<feature>`, исправь ошибки. Статус README — «на ревью».
 8. Напиши: «Перед checkpoint 2 можно убрать следы ИИ из прозы: `/humanizer` по каждому файлу
    `docs/<feature>/slices/`. Следующий шаг: `/sdd-review <feature> slices` в новой сессии». Если slice опирается
    на техническое решение без ADR, добавь «и `/sdd-adr <feature> "<тема>"`». Остановись.

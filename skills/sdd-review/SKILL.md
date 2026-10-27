@@ -14,7 +14,7 @@ disable-model-invocation: true
 
 ## Шаги
 
-1. Запусти `node scripts/sdd-lint.mjs docs/<feature>`. Каждая ошибка — находка «блокер».
+1. Запусти `node <папка этого скилла>/../sdd-lint/scripts/sdd-lint.mjs docs/<feature>`. Каждая ошибка — находка «блокер».
 2. Открой чеклист режима:
    - `spec` → [references/spec.md](references/spec.md)
    - `slices` → [references/slices.md](references/slices.md)
