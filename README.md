@@ -31,7 +31,7 @@
 `node scripts/sdd-lint.mjs docs/<feature>` в любой момент показывает ошибки и следующий шаг —
 готовыми командами со slug фичи. Форму команд в подсказках задают `SDD_SKILL_PREFIX` (по умолчанию `/`)
 и `SDD_LINT_CMD` (по умолчанию `node scripts/sdd-lint.mjs`); ветки-адаптеры меняют их значения
-по умолчанию в начале скрипта.
+по умолчанию в `scripts/sdd-lint/config.mjs`.
 
 ## sdd-lint: механика — скрипту, смысл — модели
 
@@ -52,14 +52,16 @@
 Что проверяется, по группам: `PR-*` протокол, `SP-*` Dev Spec (трассировка, примеры, персонажи,
 числа из протокола, пары границ, стоп-слова), `SL-*` slices (AC → FR, WHEN / THEN, разделы половин,
 тексты и персонажи из Dev Spec, Р1–Р3), `RM-*` README, `AD-*` ADR, `DF-*` изменения по git,
-`HG-*` humanizer, `RV-*` файлы ревью (блокер без «Решения» не даёт одобрить). Полный список с подсказками — в начале `scripts/sdd-lint.mjs`, `--json` даёт
+`HG-*` humanizer, `RV-*` файлы ревью (блокер без «Решения» не даёт одобрить). Полный список с подсказками — в `scripts/sdd-lint/rules.mjs`, `--json` даёт
 машинный вывод. Тесты скрипта: `node --test tests/*.test.mjs`.
 
 ## Что внутри
 
 ```
 rules/AGENTS.planning.md   — раздел для AGENTS.md проекта: этапы, ворота, правила артефактов
-scripts/sdd-lint.mjs       — проверки, ворота, генерация README и номеров, diff по git, guard
+scripts/sdd-lint.mjs       — точка входа lint: выбор команды
+scripts/sdd-lint/         — модули lint по темам: артефакт, команда, общее; первая строка модуля —
+                             его назначение, карта — grep -m1 . scripts/sdd-lint/*.mjs
 scripts/pre-commit         — git hook: lint и diff для фич, попавших в коммит
 tests/                     — тесты sdd-lint на эталонной фиче и её порче
 skills/
@@ -90,7 +92,7 @@ skills/
    ```
    или скопировать `skills/*` в папку скиллов вашего агента.
 4. Вставить `rules/AGENTS.planning.md` в файл правил агента (`AGENTS.md` или аналог) репозитория с доками.
-5. Скопировать `scripts/sdd-lint.mjs` и `scripts/pre-commit` в `scripts/` репозитория с доками
+5. Скопировать `scripts/sdd-lint.mjs`, папку `scripts/sdd-lint/` и `scripts/pre-commit` в `scripts/` репозитория с доками
    (нужен Node 18+) и включить hook — тогда lint срабатывает на каждый коммит, даже если агент
    его пропустил:
    ```bash
