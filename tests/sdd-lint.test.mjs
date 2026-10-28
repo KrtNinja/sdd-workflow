@@ -201,6 +201,7 @@ test('pre-commit: пропускает чистый коммит и остана
   const cwd = workspace();
   fs.mkdirSync(path.join(cwd, 'scripts'));
   fs.copyFileSync(LINT, path.join(cwd, 'scripts/sdd-lint.mjs'));
+  fs.cpSync(path.join(path.dirname(LINT), 'sdd-lint'), path.join(cwd, 'scripts/sdd-lint'), { recursive: true });
   fs.copyFileSync(path.join(path.dirname(LINT), 'pre-commit'), path.join(cwd, 'scripts/pre-commit'));
   fs.chmodSync(path.join(cwd, 'scripts/pre-commit'), 0o755);
   const env = { ...process.env, GIT_AUTHOR_NAME: 't', GIT_AUTHOR_EMAIL: 't@t', GIT_COMMITTER_NAME: 't', GIT_COMMITTER_EMAIL: 't@t' };
@@ -325,8 +326,12 @@ test('evals: place-files.sh кладёт текущие правила и lint',
     execFileSync('bash', [path.join(c, 'place-files.sh')], { cwd, stdio: 'pipe' });
     const name = path.relative(root, c);
     assert.equal(fs.readFileSync(path.join(cwd, 'AGENTS.md'), 'utf8'), `# AGENTS.md\n\n${rulesText}`, `${name}: AGENTS.md не совпадает с правилами`);
-    if (fs.existsSync(lintSrc))
+    if (fs.existsSync(lintSrc)) {
       assert.equal(fs.readFileSync(path.join(cwd, 'scripts/sdd-lint.mjs'), 'utf8'), fs.readFileSync(lintSrc, 'utf8'), `${name}: lint не совпадает`);
+      for (const m of fs.readdirSync(path.join(root, 'scripts/sdd-lint')))
+        assert.equal(fs.readFileSync(path.join(cwd, 'scripts/sdd-lint', m), 'utf8'), fs.readFileSync(path.join(root, 'scripts/sdd-lint', m), 'utf8'), `${name}: модуль lint ${m} не совпадает`);
+      assert.equal(spawnSync('node', ['scripts/sdd-lint.mjs', 'help'], { cwd }).status, 0, `${name}: скопированный lint не запускается`);
+    }
     assert.ok(fs.existsSync(path.join(cwd, 'docs')), `${name}: нет docs/`);
   }
 });
@@ -377,4 +382,16 @@ test('ревью ADR: блокер в review/adr-NNNN.md держит approve ad
   withReview(cwd, REVIEW.replace('# Ревью slices', '# Ревью ADR 0001'), 'adr-0001.md');
   assert.match(run(cwd, 'docs/comments').out, /ADR 0001 «предложено» — ревью уже было/);
   assert.equal(run(cwd, 'approve', 'adr', 'docs/comments').code, 1);
+});
+
+// ---------- устройство скрипта ----------
+// Модули читают по одному, поэтому у каждого есть строка-назначение (grep -m1 . sdd-lint/*.mjs — карта)
+// и потолок размера: разрастание видно сразу, а не когда файл уже не помещается в контекст.
+test('модули sdd-lint: строка-назначение и не больше 300 строк', () => {
+  const dir = path.join(path.dirname(LINT), 'sdd-lint');
+  for (const f of fs.readdirSync(dir).filter((f) => f.endsWith('.mjs'))) {
+    const lines = fs.readFileSync(path.join(dir, f), 'utf8').split('\n');
+    assert.match(lines[0], /^\/\/ \S/, `${f}: первая строка — комментарий о назначении модуля`);
+    assert.ok(lines.length <= 300, `${f}: ${lines.length} строк — раздели модуль`);
+  }
 });

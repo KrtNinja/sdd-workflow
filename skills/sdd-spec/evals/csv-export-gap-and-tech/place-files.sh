@@ -10,5 +10,5 @@ cp -R "$here/files/." .
 # в ветках, где lint лежит в скилле sdd-lint, его найдут от папки скилла.
 if [ -f "$root/scripts/sdd-lint.mjs" ]; then
   mkdir -p scripts
-  cp "$root/scripts/sdd-lint.mjs" scripts/
+  cp -R "$root/scripts/sdd-lint.mjs" "$root/scripts/sdd-lint" scripts/
 fi
