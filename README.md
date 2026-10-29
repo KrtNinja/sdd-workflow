@@ -1,5 +1,9 @@
 # sdd-workflow — пул для этапа «Планирование»
 
+> **Переехало в [sdd-planner](https://github.com/KrtNinja/sdd-planner).** Эта ветка больше не
+> обновляется: разработка зоны «Планирование» под GigaCode CLI идёт там, история перенесена целиком.
+> Расширение там называется `sdd-planner` — как переставить, описано в его README.
+
 Скиллы, правила и проверки, чтобы вести фичу по Spec-Driven Development от одной фразы до
 одобренных slices: brainstorming → Dev Spec → slices → ADR. Реализация (slice 001, OpenSpec Change)
 — следующий этап, сюда не входит.
